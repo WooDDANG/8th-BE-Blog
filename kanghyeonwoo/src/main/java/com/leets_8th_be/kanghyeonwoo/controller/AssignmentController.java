@@ -3,6 +3,7 @@ package com.leets_8th_be.kanghyeonwoo.controller;
 import com.leets_8th_be.kanghyeonwoo.dto.RepeatStringRequest;
 import com.leets_8th_be.kanghyeonwoo.dto.RepeatStringResponse;
 import com.leets_8th_be.kanghyeonwoo.service.AssignmentService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -15,13 +16,13 @@ public class AssignmentController {
 
     private final AssignmentService assignmentService;
 
-    @GetMapping("/health")
+    @GetMapping({"/health", "/api/v1/health"})
     public String healthCheck() {
         return assignmentService.getHealthStatus();
     }
 
-    @PostMapping("/string/repeat")
-    public RepeatStringResponse repeatString(@RequestBody RepeatStringRequest request) {
+    @PostMapping({"/string/repeat", "/api/v1/string/repeat"})
+    public RepeatStringResponse repeatString(@Valid @RequestBody RepeatStringRequest request) {
         return assignmentService.repeatString(request);
     }
 }

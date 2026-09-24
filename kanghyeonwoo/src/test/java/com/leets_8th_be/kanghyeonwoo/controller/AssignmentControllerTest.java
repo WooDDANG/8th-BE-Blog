@@ -22,49 +22,67 @@ class AssignmentControllerTest {
     private MockMvc mockMvc;
 
     @Test
-    @DisplayName("GET /health 요청 시 200 OK 및 ok 문자열을 반환한다")
+    @DisplayName("GET /health 및 /api/v1/health 요청 시 200 OK 및 ok 문자열을 반환한다")
     void healthCheck() throws Exception {
         mockMvc.perform(get("/health"))
+                .andExpect(status().isOk())
+                .andExpect(content().string("ok"));
+
+        mockMvc.perform(get("/api/v1/health"))
                 .andExpect(status().isOk())
                 .andExpect(content().string("ok"));
     }
 
     @Test
-    @DisplayName("POST /string/repeat 요청 시 문자열이 2개 복제된 JSON을 반환한다")
-    void repeatString() throws Exception {
+    @DisplayName("POST /string/repeat 정상 요청 시 BaseResponse 메타 정보와 복제된 문자열을 반환한다")
+    void repeatStringSuccess() throws Exception {
         String requestJson = "{\"value\":\"hello\"}";
 
         mockMvc.perform(post("/string/repeat")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(requestJson))
                 .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.message").value("요청이 성공적으로 처리되었습니다."))
+                .andExpect(jsonPath("$.string_one").value("hello"))
+                .andExpect(jsonPath("$.string_two").value("hello"));
+
+        mockMvc.perform(post("/api/v1/string/repeat")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(requestJson))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.string_one").value("hello"))
                 .andExpect(jsonPath("$.string_two").value("hello"));
     }
 
     @Test
-    @DisplayName("POST /string/repeat 요청 시 빈 문자열이 주어지면 빈 문자열 2개를 반환한다")
-    void repeatEmptyString() throws Exception {
-        String requestJson = "{\"value\":\"\"}";
-
+    @DisplayName("POST /string/repeat 요청 시 빈 문자열 또는 공백이면 400 Bad Request와 ErrorResponse를 반환한다")
+    void repeatInvalidInput() throws Exception {
+        String emptyJson = "{\"value\":\"\"}";
         mockMvc.perform(post("/string/repeat")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(requestJson))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.string_one").value(""))
-                .andExpect(jsonPath("$.string_two").value(""));
+                        .content(emptyJson))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.error_code").value("INVALID_INPUT"));
+
+        String blankJson = "{\"value\":\"   \"}";
+        mockMvc.perform(post("/string/repeat")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(blankJson))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.error_code").value("INVALID_INPUT"));
     }
 
     @Test
-    @DisplayName("POST /string/repeat 요청 시 null 값이 주어지면 null 필드를 안전하게 반환한다")
-    void repeatNullValue() throws Exception {
-        String requestJson = "{\"value\":null}";
-
+    @DisplayName("POST /string/repeat 요청 시 본문이 누락되면 400 Bad Request와 ErrorResponse를 반환한다")
+    void repeatMissingBody() throws Exception {
         mockMvc.perform(post("/string/repeat")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(requestJson))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.string_one").isEmpty())
-                .andExpect(jsonPath("$.string_two").isEmpty());
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.error_code").value("MALFORMED_JSON"));
     }
 }
